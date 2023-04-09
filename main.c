@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 static const int WIDTH = 600;
 static const int HEIGHT = 600;
@@ -24,16 +25,28 @@ void draw_triangle() {
   points[0].y = 30;
 }
 
-double to_radians(double degree) { return degree * (M_PI/ 180.0); }
+double to_radians(double degree) { return degree * (M_PI / 180.0); }
 
-int main() {
+int main(int argc, char **argv) {
   SDL_Renderer *renderer;
   SDL_Window *window;
   int8_t is_running;
   uint32_t *framebuffer;
+  SDL_FPoint *center;
   double angle = -1 * to_radians(10.0);
   int radius = 150;
 
+  // first argument radius of circle
+  if (argc > 1) {
+    radius = atoi(argv[1]);
+  }
+
+  if (argc > 2) {
+    angle = -1 * to_radians(atof(argv[2]));
+  }
+  printf("Drawing with angle %f and radius %d\n", angle, radius);
+
+  srand(time(NULL));
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
   window =
@@ -42,13 +55,23 @@ int main() {
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
   is_running = 1;
+  center = malloc(sizeof(SDL_FPoint) * 3);
+  center[0].x = CENTER_X;
+  center[0].y = CENTER_Y;
 
-  draw_circle(renderer, CENTER_X, CENTER_Y, angle, radius);
+  center[1].x = 0;
+  center[1].y = 0;
+
   while (is_running) {
     SDL_Event ev;
     while (SDL_PollEvent(&ev)) {
       if (ev.type == SDL_KEYDOWN) {
-        is_running = 0;
+        switch (ev.key.keysym.sym) {
+          case SDLK_q:
+          is_running = 0;
+          break;
+        default: ;
+        }
       }
     }
     // Clear screen
@@ -56,39 +79,18 @@ int main() {
     // SDL_RenderClear(renderer);
 
     // create assets to draw
+    uint8_t R = rand() % 0x100;
+    uint8_t G = rand() % 0x100;
+    uint8_t B = rand() % 0x100;
+    SDL_SetRenderDrawColor(renderer, R, G, B, SDL_ALPHA_OPAQUE);
     // SDL_RenderDrawLinesF(renderer, trig, 4);
-
+    draw_circle_pbp(center, angle, radius);
+    SDL_RenderDrawLinesF(renderer, center, 3);
     // render
     SDL_RenderPresent(renderer);
-    SDL_Delay(100);
+    SDL_Delay(50);
   }
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
+  free(center);
 }
-
-/*
-  trig = malloc(sizeof(SDL_FPoint) * 4);
-
-  // center
-  trig[0].x = CENTER_X;
-  trig[0].y = CENTER_Y;
-
-  trig[1].x = trig[0].x;
-  trig[1].y = trig[0].y - radius;
-
-  float translateX = trig[1].x - trig[0].x;
-  float translateY = (-1 * trig[1].y) - (-1 * trig[0].y);
-
-  float cos_angle = cos(angle);
-  float sin_angle = sin(angle);
-
-  trig[2].x = (cos_angle * translateX - sin_angle * translateY) + trig[0].x;
-  trig[2].y =
-      (-1 * (sin_angle * translateX + cos_angle * translateY)) + trig[0].y;
-
-  trig[3] = trig[0];
-
-  printf("%f %f\n", trig[0].x, trig[0].y);
-  printf("%f %f\n", trig[1].x, trig[1].y);
-  printf("%f %f\n", trig[2].x, trig[2].y);
-*/
